@@ -15,6 +15,7 @@ let editingDistId = null;
 let editingPartKey = null;
 let pickerDistId = null;
 let pickerContextDistId = null;
+let doublonSaisiePending = false;
 let pendingDupes = [];
 
 const $ = (id) => document.getElementById(id);
@@ -486,7 +487,7 @@ function renderBenefits() {
     return `<div class="item" data-edit="${b.id}">
       <div class="item-info">
         <div class="item-name">${escapeHtml(benefFull(b))}<span class="item-id"> · ${escapeHtml(b.id)}</span>${badge}${soldeBadge}</div>
-        <div class="item-meta">${escapeHtml(b.statut || 'Statut non renseigné')} · ${b.nbPersonnes ?? '?'} pers.${b.tel ? ' · ' + escapeHtml(b.tel) : ''}</div>
+        <div class="item-meta">${escapeHtml(b.statut || 'Statut non renseigné')} · ${b.nbPersonnes ?? '?'} pers.${b.naissance ? ' · né(e) le ' + fmtDate(b.naissance) : ''}${b.tel ? ' · ' + escapeHtml(b.tel) : ''}</div>
       </div>
       <div class="item-actions">
         <button class="icon-btn" data-act="edit" aria-label="Modifier">✏️</button>
@@ -512,6 +513,25 @@ function openBenefDialog(benefId, fromDistId) {
   if (!$('dialogBenef').open) $('dialogBenef').showModal();
 }
 
+function nameSuspects(excludeId) {
+  const nom = $('fNom').value.trim();
+  const prenom = $('fPrenom').value.trim();
+  if (!norm(nom)) return [];
+  return benefits.filter((b) => b.id !== excludeId
+    && norm(b.nom) === norm(nom) && norm(b.prenom || '') === norm(prenom || ''));
+}
+
+function renderDoublonSaisie(suspects) {
+  const nom = $('fNom').value.trim();
+  const prenom = $('fPrenom').value.trim();
+  $('doublonBenefList').innerHTML = `
+    <div class="dupe-item">
+      \ud83d\uddfe Nouvelle fiche : <div class="dupe-fields">${escapeHtml(`${prenom} ${nom}`.trim())} · Date de naissance : ${$('fNaissance').value ? fmtDate($('fNaissance').value) : 'non renseignée'} · Tél : ${escapeHtml($('fTel').value.trim() || 'non renseigné')}</div>
+    </div>` + suspects.map((b) => `<div class="dupe-item">
+      \ud83e\uddfa Déjà enregistré : <div class="dupe-fields">${dupeLine(b.id, benefFull(b), b.naissance, b.tel, b.provisoire)}</div>
+    </div>`).join('');
+}
+
 function saveBenef(e) {
   e.preventDefault();
   const nom = $('fNom').value.trim();
@@ -524,6 +544,15 @@ function saveBenef(e) {
     statut: $('fStatut').value,
     nbPersonnes: Math.max(1, parseInt($('fNb').value, 10) || 1)
   };
+  if (!doublonSaisiePending) {
+    const suspects = nameSuspects(editingBenefId);
+    if (suspects.length) {
+      renderDoublonSaisie(suspects);
+      if (!$('dialogDoublonBenef').open) $('dialogDoublonBenef').showModal();
+      return;
+    }
+  }
+  doublonSaisiePending = false;
   if (editingBenefId) {
     Object.assign(benefById(editingBenefId), data);
   } else {
@@ -680,7 +709,7 @@ function renderPicker(q) {
     return `<div class="item" data-pick="${b.id}">
       <div class="item-info">
         <div class="item-name">${escapeHtml(benefFull(b))}<span class="item-id"> · ${escapeHtml(b.id)}</span>${soldeTxt}${prov}</div>
-        <div class="item-meta">${escapeHtml(b.statut || 'Statut non renseigné')} · ${b.nbPersonnes ?? '?'} pers.</div>
+        <div class="item-meta">${escapeHtml(b.statut || 'Statut non renseigné')} · ${b.nbPersonnes ?? '?'} pers.${b.naissance ? ' · né(e) le ' + fmtDate(b.naissance) : ''}${b.tel ? ' · ' + escapeHtml(b.tel) : ''}</div>
       </div>
     </div>`;
   }).join('');
@@ -826,7 +855,20 @@ $('btnShowDupes').addEventListener('click', openDupesDialog);
 $('btnDupesMergeAll').addEventListener('click', () => resolveAllDupes(true));
 $('btnDupesNewAll').addEventListener('click', () => resolveAllDupes(false));
 $('btnDupesClose').addEventListener('click', () => $('dialogDupes').close());
-$('btnCancelBenef').addEventListener('click', () => $('dialogBenef').close());
+$('btnDoublonBenefYes').addEventListener('click', () => {
+  doublonSaisiePending = true;
+  if ($('dialogDoublonBenef').open) $('dialogDoublonBenef').close();
+  const submit = document.querySelector('#formBenef button[type="submit"]');
+  if (submit) submit.click();
+});
+$('btnDoublonBenefNo').addEventListener('click', () => {
+  doublonSaisiePending = false;
+  if ($('dialogDoublonBenef').open) $('dialogDoublonBenef').close();
+});
+$('btnCancelBenef').addEventListener('click', () => {
+  doublonSaisiePending = false;
+  $('dialogBenef').close();
+});
 
 $('btnNewDist').addEventListener('click', () => openDistDialog(null));
 $('formDist').addEventListener('submit', saveDist);

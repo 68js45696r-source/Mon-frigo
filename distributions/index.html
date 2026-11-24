@@ -157,6 +157,16 @@
     </form>
   </dialog>
 
+  <dialog id="dialogDoublonBenef" class="dialog">
+    <h2>Doublon possible</h2>
+    <p class="hint">Un ou des bénéficiaires portent déjà ce nom et ce prénom. Comparez la date de naissance et le numéro de téléphone : s'il s'agit de la même personne, annulez et mettez plutôt sa fiche à jour (sinon elle aura deux identifiants différents).</p>
+    <div id="doublonBenefList" class="dupe-list"></div>
+    <div class="dialog-actions">
+      <button type="button" class="btn-ghost" id="btnDoublonBenefNo">Annuler / modifier</button>
+      <button type="button" class="btn-primary" id="btnDoublonBenefYes">Créer quand même</button>
+    </div>
+  </dialog>
+
   <dialog id="dialogPicker" class="dialog dialog-wide">
     <h2>Enregistrer une présence</h2>
     <label>Rechercher

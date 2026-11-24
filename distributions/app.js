@@ -15,6 +15,7 @@ let editingDistId = null;
 let editingPartKey = null;
 let pickerDistId = null;
 let pickerContextDistId = null;
+let pendingDupes = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -130,10 +131,11 @@ const HEADER_MAP = {
   naissance: ['datedenaissance', 'naissance', 'datenaissance', 'dob'],
   tel: ['telephone', 'tel', 'numerodetelephone', 'portable', 'gsm'],
   statut: ['statut', 'situation', 'situationfamiliale', 'composition', 'compositionfamiliale', 'typefamille'],
-  nb: ['nbdepersonnes', 'nbpersonnes', 'nombresdepersonnes', 'nombredepersonnes', 'personnes', 'taillefamille', 'nbpersonnesdanslafamille', 'nbpersonnesfamille']
+  nb: ['nbdepersonnes', 'nbpersonnes', 'nombresdepersonnes', 'nombredepersonnes', 'personnes', 'taillefamille', 'nbpersonnesdanslafamille', 'nbpersonnesfamille'],
+  provisoire: ['provisoire', 'temporaire', 'provisional']
 };
 
-const COLS = ['id', 'nom', 'prenom', 'naissance', 'tel', 'statut', 'nb'];
+const COLS = ['id', 'provisoire', 'nom', 'prenom', 'naissance', 'tel', 'statut', 'nb'];
 
 function mapHeaders(header) {
   const idx = {};
@@ -146,11 +148,17 @@ function mapHeaders(header) {
   return idx;
 }
 
+function parseProvisoire(v) {
+  const n = norm(v);
+  return ['oui', 'o', 'true', '1', 'x', 'provisoire', 'provisional', 'yes', 'y'].includes(n);
+}
+
 function rowToBenef(row, idx) {
   const get = (k) => (idx[k] !== undefined ? String(row[idx[k]] ?? '').trim() : '');
   const nb = toNumber(get('nb'));
   return {
     id: get('id'),
+    provisoire: idx.provisoire !== undefined ? parseProvisoire(get('provisoire')) : null,
     nom: get('nom'),
     prenom: get('prenom'),
     naissance: toIsoDate(get('naissance')),
@@ -199,9 +207,17 @@ async function importFile(file) {
         if (data[k]) existing[k] = data[k];
       }
       if (data.nbPersonnes) existing.nbPersonnes = data.nbPersonnes;
-      existing.provisoire = false;
+      existing.provisoire = data.provisoire !== null ? data.provisoire : false;
       updated++;
     } else {
+      const suspects = data.nom
+        ? benefits.filter((b) => b.id !== existing && String(b.id).toLowerCase() !== String(data.id || '').toLowerCase()
+          && norm(b.nom) === norm(data.nom) && norm(b.prenom || '') === norm(data.prenom || ''))
+        : [];
+      if (suspects.length) {
+        pendingDupes.push({ data, candidates: suspects });
+        continue;
+      }
       const id = data.id || nextProvisionalId();
       if (byId.has(id.toLowerCase())) continue;
       const benef = {
@@ -212,7 +228,7 @@ async function importFile(file) {
         tel: data.tel,
         statut: data.statut,
         nbPersonnes: data.nbPersonnes,
-        provisoire: !data.id
+        provisoire: data.provisoire !== null ? data.provisoire : !data.id
       };
       benefits.push(benef);
       byId.set(id.toLowerCase(), benef);
@@ -221,7 +237,96 @@ async function importFile(file) {
   }
   persist();
   render();
-  showToast(`Import : ${added} ajouté(s), ${updated} mis à jour`);
+  if (pendingDupes.length) {
+    openDupesDialog();
+    showToast(`Import : ${added} ajouté(s), ${updated} mis à jour, ${pendingDupes.length} doublon(s) à valider`);
+  } else {
+    showToast(`Import : ${added} ajouté(s), ${updated} mis à jour`);
+  }
+}
+
+function openDupesDialog() {
+  if (!pendingDupes.length) return;
+  renderDupes();
+  if (!$('dialogDupes').open) $('dialogDupes').showModal();
+}
+
+function dupeLine(id, nomPrenom, naissance, tel, provisoireTag) {
+  return `Identifiant : <strong>${escapeHtml(id || 'non renseigné')}</strong> · Nom/Prénom : ${escapeHtml(nomPrenom)} · Date de naissance : ${naissance ? fmtDate(naissance) : 'non renseignée'} · Tél : ${escapeHtml(tel || 'non renseigné')}${provisoireTag ? ' · <em>provisoire</em>' : ''}`;
+}
+
+function renderDupes() {
+  const list = $('dupeList');
+  list.innerHTML = pendingDupes.map((item, i) => {
+    const d = item.data;
+    const importe = `<div class="item-info">
+      📄 Fichier secours : <div class="dupe-fields">${dupeLine(d.id, `${d.prenom || ''} ${d.nom}`.trim(), d.naissance, d.tel, false)}</div>
+    </div>`;
+    const candidats = item.candidates.length
+      ? item.candidates.map((c, j) => `<div class="dupe-candidate">
+          🧺 Appli (${c.provisoire ? 'identifiant créé P-xxxx' : 'identifiant secours'}) : <div class="dupe-fields">${dupeLine(c.id, benefFull(c), c.naissance, c.tel, c.provisoire)}</div>
+          <button type="button" class="pill pill-ok" data-dupe="${i}" data-cand="${j}">Fusionner</button>
+        </div>`).join('')
+      : '<div class="dupe-candidate">Aucun bénéficiaire enregistré ne correspond</div>';
+    return `<div class="dupe-item">
+      ${importe}
+      ${candidats}
+      <button type="button" class="chip" data-dupe-new="${i}">Créer en séparé</button>
+    </div>`;
+  }).join('');
+  $('dupeBanner').classList.toggle('hidden', pendingDupes.length === 0);
+  $('dupeBannerText').textContent = `${pendingDupes.length} doublon(s) import(s) à valider`;
+}
+
+function resolveDupe(index, candIndex) {
+  const item = pendingDupes[index];
+  if (!item) return;
+  const d = item.data;
+  const target = candIndex !== null && item.candidates[candIndex] ? item.candidates[candIndex] : null;
+  if (target) {
+    const newId = d.id || target.id;
+    if (newId !== target.id) {
+      for (const dist of dists) {
+        for (const p of dist.participants) {
+          if (p.benefId === target.id) p.benefId = newId;
+        }
+      }
+    }
+    target.id = newId;
+    target.nom = d.nom || target.nom;
+    target.prenom = d.prenom || target.prenom;
+    target.naissance = d.naissance || target.naissance;
+    target.tel = d.tel || target.tel;
+    target.statut = d.statut || target.statut;
+    if (d.nbPersonnes) target.nbPersonnes = d.nbPersonnes;
+    target.provisoire = d.provisoire !== null ? d.provisoire : false;
+  } else {
+    const id = d.id || nextProvisionalId();
+    if (!benefById(id)) {
+      benefits.push({
+        id,
+        nom: d.nom,
+        prenom: d.prenom,
+        naissance: d.naissance,
+        tel: d.tel,
+        statut: d.statut,
+        nbPersonnes: d.nbPersonnes,
+        provisoire: d.provisoire !== null ? d.provisoire : !d.id
+      });
+    }
+  }
+  pendingDupes.splice(index, 1);
+  persist();
+  if (pendingDupes.length) renderDupes();
+  else if ($('dialogDupes').open) $('dialogDupes').close();
+  render();
+}
+
+function resolveAllDupes(merge) {
+  while (pendingDupes.length) resolveDupe(0, merge ? 0 : null);
+  if ($('dialogDupes').open) $('dialogDupes').close();
+  showToast(merge ? 'Doublons fusionnés' : 'Doublons créés en séparé');
+  render();
 }
 
 function downloadXlsx(sheets, filename) {
@@ -237,7 +342,7 @@ function downloadXlsx(sheets, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-const EXPORT_BENEF_HEADERS = ['Identifiant', 'Nom', 'Prénom', 'Date de naissance', 'Téléphone', 'Statut', 'Nb de personnes'];
+const EXPORT_BENEF_HEADERS = ['Identifiant', 'Provisoire', 'Nom', 'Prénom', 'Date de naissance', 'Téléphone', 'Statut', 'Nb de personnes'];
 
 function exportBenefits() {
   if (!benefits.length) {
@@ -249,14 +354,14 @@ function exportBenefits() {
     const solde = soldeOf(b.id, null);
     rows.push([
       b.id,
+      b.provisoire ? 'Oui' : '',
       b.nom,
       b.prenom,
       b.naissance ? fmtDate(b.naissance) : '',
       b.tel || '',
       b.statut || '',
       b.nbPersonnes ?? '',
-      solde !== 0 ? eur(solde) : '',
-      b.provisoire ? 'Oui' : ''
+      solde !== 0 ? eur(solde) : ''
     ]);
   }
   downloadXlsx([{ name: 'Bénéficiaires', rows }], `beneficiaires-${todayStr().replace(/-/g, '')}.xlsx`);
@@ -314,7 +419,7 @@ function exportDistribution(dist) {
   ];
   const benefRows = [EXPORT_BENEF_HEADERS.slice()];
   for (const b of [...benefits].sort((a, b2) => a.nom.localeCompare(b2.nom, 'fr'))) {
-    benefRows.push([b.id, b.nom, b.prenom, b.naissance ? fmtDate(b.naissance) : '', b.tel || '', b.statut || '', b.nbPersonnes ?? '']);
+    benefRows.push([b.id, b.provisoire ? 'Oui' : '', b.nom, b.prenom, b.naissance ? fmtDate(b.naissance) : '', b.tel || '', b.statut || '', b.nbPersonnes ?? '']);
   }
   downloadXlsx(
     [{ name: 'Présences', rows }, { name: 'Bénéficiaires', rows: benefRows }],
@@ -680,6 +785,17 @@ document.addEventListener('click', (e) => {
     return;
   }
 
+  const dupeMerge = e.target.closest('[data-dupe]');
+  if (dupeMerge) {
+    resolveDupe(parseInt(dupeMerge.dataset.dupe, 10), parseInt(dupeMerge.dataset.cand, 10));
+    return;
+  }
+  const dupeNew = e.target.closest('[data-dupe-new]');
+  if (dupeNew) {
+    resolveDupe(parseInt(dupeNew.dataset.dupeNew, 10), null);
+    return;
+  }
+
   const pay = e.target.closest('[data-pay]');
   if (pay) {
     openPayDialog(parseInt(pay.dataset.pay, 10));
@@ -706,6 +822,10 @@ $('fileImport').addEventListener('change', (e) => {
   e.target.value = '';
 });
 $('formBenef').addEventListener('submit', saveBenef);
+$('btnShowDupes').addEventListener('click', openDupesDialog);
+$('btnDupesMergeAll').addEventListener('click', () => resolveAllDupes(true));
+$('btnDupesNewAll').addEventListener('click', () => resolveAllDupes(false));
+$('btnDupesClose').addEventListener('click', () => $('dialogDupes').close());
 $('btnCancelBenef').addEventListener('click', () => $('dialogBenef').close());
 
 $('btnNewDist').addEventListener('click', () => openDistDialog(null));

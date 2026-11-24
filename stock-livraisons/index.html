@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mon Stock">
+  <meta name="theme-color" content="#5856d6">
+  <title>Mon Stock</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <h1>📦 Mon Stock</h1>
+    <div class="header-actions">
+      <button id="btnExport" class="btn-export" type="button">📊 Excel</button>
+      <button id="btnAdd" class="btn-primary" type="button">+ Produit</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="stock" type="button">Stock</button>
+    <button class="tab" data-tab="mouvements" type="button">Mouvements</button>
+    <button class="tab" data-tab="inventaire" type="button">Inventaire</button>
+  </nav>
+
+  <main>
+    <section id="tab-stock">
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Rechercher…" autocomplete="off">
+        <select id="filterType">
+          <option value="">Tous types</option>
+          <option>Conserves</option>
+          <option>Surgelés</option>
+          <option>Épiceries sèches</option>
+        </select>
+      </div>
+      <div id="stockList" class="list"></div>
+      <div id="emptyStock" class="empty hidden">
+        <p>Votre stock est vide 📦</p>
+        <p class="hint">Touchez « + Produit » pour créer votre premier article, puis « 📥 » pour enregistrer une livraison.</p>
+      </div>
+    </section>
+
+    <section id="tab-mouvements" class="hidden">
+      <div class="toolbar">
+        <select id="filterMvtProduit">
+          <option value="">Tous produits</option>
+        </select>
+        <select id="filterMvtType">
+          <option value="">Tous mouvements</option>
+          <option value="E">Entrées</option>
+          <option value="S">Sorties</option>
+          <option value="I">Inventaires</option>
+        </select>
+      </div>
+      <div id="mvtList" class="list"></div>
+      <div id="emptyMvt" class="empty hidden">
+        <p>Aucun mouvement</p>
+        <p class="hint">Les livraisons, sorties et ajustements d'inventaire apparaîtront ici.</p>
+      </div>
+    </section>
+
+    <section id="tab-inventaire" class="hidden">
+      <div class="toolbar">
+        <label class="inv-date-label">Date de l'inventaire
+          <input type="date" id="invDate">
+        </label>
+      </div>
+      <div id="invList" class="list"></div>
+      <div class="inv-actions">
+        <button id="btnValidateInv" class="btn-primary" type="button" disabled>✅ Valider l'inventaire</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="dialogProduit" class="dialog">
+    <form id="formProduit">
+      <h2 id="produitTitle">Nouveau produit</h2>
+      <label>Nom
+        <input type="text" id="pNom" required>
+      </label>
+      <label>Type
+        <select id="pType">
+          <option>Conserves</option>
+          <option>Surgelés</option>
+          <option>Épiceries sèches</option>
+        </select>
+      </label>
+      <div class="row">
+        <label>Unité
+          <select id="pUnite">
+            <option>pièce(s)</option>
+            <option>boîte(s)</option>
+            <option>paquet(s)</option>
+            <option>sachet(s)</option>
+            <option>bocal/casier</option>
+            <option>kg</option>
+            <option>L</option>
+          </select>
+        </label>
+        <label>Stock bas si ≤
+          <input type="number" id="pSeuil" min="0" step="any" required>
+        </label>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" id="btnDeleteProduit" class="btn-danger hidden">Supprimer</button>
+        <button type="button" class="btn-ghost" data-close>Annuler</button>
+        <button type="submit" class="btn-primary">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dialogEntree" class="dialog">
+    <form id="formEntree">
+      <h2>Entrée de livraison</h2>
+      <p class="hint" id="entreeProduit"></p>
+      <label>Quantité reçue
+        <input type="number" id="eQty" min="0.001" step="any" required>
+      </label>
+      <label>N° de bordereau de livraison
+        <input type="text" id="eBordereau" placeholder="ex. BL-2026-0142">
+      </label>
+      <label>Date de livraison
+        <input type="date" id="eDate" required>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="btn-ghost" data-close>Annuler</button>
+        <button type="submit" class="btn-primary">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dialogSortie" class="dialog">
+    <form id="formSortie">
+      <h2>Sortie de stock</h2>
+      <p class="hint" id="sortieProduit"></p>
+      <label>Quantité sortie
+        <input type="number" id="sQty" min="0.001" step="any" required>
+      </label>
+      <label>Motif
+        <input type="text" id="sMotif" placeholder="ex. Consommation, casse…" list="motifs">
+        <datalist id="motifs">
+          <option>Consommation</option>
+          <option>Casse</option>
+          <option>Transfert</option>
+          <option>Soin</option>
+        </datalist>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="btn-ghost" data-close>Annuler</button>
+        <button type="submit" class="btn-primary">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

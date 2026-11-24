@@ -1,0 +1,39 @@
+# 📦 Mon Stock
+
+Gestion du stock des produits livrés — application web (PWA) jumelle de « Mon Frigo », installable sur iPhone depuis Safari.
+
+## Fonctionnalités
+
+- **Produits par type** : Conserves, Surgelés, Épiceries sèches (regroupés par sections)
+- **Entrées de livraison** : quantité + **numéro de bordereau** + **date de livraison**, conservés dans l'historique
+- **Sorties de stock** : quantité + motif (consommation, casse…), avec garde-fou si la quantité dépasse le stock
+- **Inventaire** : stock théorique vs stock réel saisi, **écarts calculés en direct** ; la validation enregistre automatiquement les ajustements comme mouvements
+- **Export Excel (.xlsx)** : 3 feuilles — *Stock actuel*, *Mouvements* (chaque entrée/sortie avec bordereau et date de livraison), *Inventaires* (théorique / réel / écart). Génération de fichier Open XML native, sans dépendance
+- **Hors ligne**, données stockées sur l'appareil (localStorage), mode sombre automatique
+
+## Installation sur iPhone
+
+1. Ouvrir l'URL du site dans **Safari**
+2. **Partager → Sur l'écran d'accueil → Ajouter**
+
+URL : `https://68js45696r-source.github.io/Mon-frigo/stock-livraisons/`
+
+## Structure
+
+| Fichier | Rôle |
+|---|---|
+| `index.html` | Interface (3 onglets : Stock, Mouvements, Inventaire) et formulaires |
+| `styles.css` | Style (thème clair/sombre) |
+| `app.js` | Logique : stock, mouvements, inventaires, générateur .xlsx |
+| `manifest.webmanifest` | Fiche d'installation PWA |
+| `sw.js` | Cache hors ligne |
+
+## Format des données
+
+- **Produits** : nom, type, unité, seuil d'alerte
+- **Mouvements** : date, sens (Entrée / Sortie / Inventaire), quantité, bordereau + date de livraison (pour les entrées), motif (pour les sorties)
+- **Inventaires** : date + pour chaque produit compté : stock théorique, stock réel, écart
+
+## Test de l'export
+
+Ouvrir le fichier `.xlsx` téléchargé avec Excel, Numbers ou LibreOffice. Le fichier est un ZIP Open XML généré en JavaScript pur (compression « stored »), validé par des tests automatiques.

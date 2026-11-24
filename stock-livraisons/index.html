@@ -18,6 +18,7 @@
   <header class="header">
     <h1>📦 Mon Stock</h1>
     <div class="header-actions">
+      <button id="btnScan" class="btn-scan" type="button" aria-label="Scanner un code-barres">📷</button>
       <button id="btnExport" class="btn-export" type="button">📊 Excel</button>
       <button id="btnAdd" class="btn-primary" type="button">+ Produit</button>
     </div>
@@ -93,21 +94,25 @@
         </select>
       </label>
       <div class="row">
-        <label>Unité
+        <label>Unité (conditionnement)
           <select id="pUnite">
             <option>pièce(s)</option>
             <option>boîte(s)</option>
             <option>paquet(s)</option>
             <option>sachet(s)</option>
             <option>bocal/casier</option>
-            <option>kg</option>
-            <option>L</option>
+            <option>bidon(s)</option>
+            <option>carton(s)</option>
           </select>
         </label>
         <label>Stock bas si ≤
           <input type="number" id="pSeuil" min="0" step="any" required>
         </label>
       </div>
+      <label id="wrapStockInit">Stock initial (nombre de produits)
+        <input type="number" id="pStockInit" min="0" step="any" value="0">
+      </label>
+      <p class="hint">Le stock compte le nombre de produits (3 briques de lait = 3), pas le volume.</p>
       <div class="dialog-actions">
         <button type="button" id="btnDeleteProduit" class="btn-danger hidden">Supprimer</button>
         <button type="button" class="btn-ghost" data-close>Annuler</button>
@@ -158,6 +163,15 @@
       </div>
     </form>
   </dialog>
+
+  <div id="scanner" class="scanner hidden">
+    <video id="scanVideo" playsinline muted autoplay></video>
+    <canvas id="scanCanvas" class="hidden"></canvas>
+    <div class="scan-frame" aria-hidden="true"></div>
+    <button id="btnCloseScanner" class="scanner-close" type="button" aria-label="Fermer">✕</button>
+    <p id="scanStatus" class="scan-status">Alignez le code-barres dans le cadre</p>
+    <p id="scanHint" class="scan-hint hidden">Caméra inaccessible — utilisez « + Produit »</p>
+  </div>
 
   <div id="toast" class="toast hidden"></div>
 

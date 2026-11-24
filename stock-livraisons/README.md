@@ -4,7 +4,10 @@ Gestion du stock des produits livrés — application web (PWA) jumelle de « Mo
 
 ## Fonctionnalités
 
+- **Scanner de codes-barres** (📷) : EAN-13 / EAN-8 décodé dans le navigateur → produit reconnu ⇒ ouverture directe de l'entrée de livraison ; produit inconnu ⇒ création pré-remplie via Open Food Facts (le nom est saisi une seule fois puis mémorisé)
 - **Produits par type** : Conserves, Surgelés, Épiceries sèches (regroupés par sections)
+- **Stock = nombre de produits** (3 briques de lait = 3), unités de conditionnement uniquement (pièces, boîtes, paquets, bocaux, bidons, cartons)
+- **Stock initial** renseignable à la création du produit (enregistré comme une entrée « Stock initial »)
 - **Entrées de livraison** : quantité + **numéro de bordereau** + **date de livraison**, conservés dans l'historique
 - **Sorties de stock** : quantité + motif (consommation, casse…), avec garde-fou si la quantité dépasse le stock
 - **Inventaire** : stock théorique vs stock réel saisi, **écarts calculés en direct** ; la validation enregistre automatiquement les ajustements comme mouvements

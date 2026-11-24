@@ -59,6 +59,7 @@
         <div class="toolbar">
           <button id="btnBackDists" class="btn-ghost" type="button">← Retour</button>
           <span id="distDate" class="detail-date"></span>
+          <button id="btnEditDistDate" class="icon-btn" type="button" aria-label="Modifier la date">🗓️</button>
           <button id="btnExportDist" class="btn-export" type="button">📊 Excel</button>
         </div>
 
@@ -94,6 +95,19 @@
   </main>
 
   <div id="toast" class="toast hidden"></div>
+
+  <dialog id="dialogDist" class="dialog">
+    <form id="formDist">
+      <h2 id="dialogDistTitle">Nouvelle distribution</h2>
+      <label>Date de la distribution
+        <input type="date" id="fDistDate" required>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="btn-ghost" id="btnCancelDist">Annuler</button>
+        <button type="submit" class="btn-primary">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="dialogBenef" class="dialog">
     <form id="formBenef">

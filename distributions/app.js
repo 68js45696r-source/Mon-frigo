@@ -11,6 +11,7 @@ let dists = load(STORAGE.dists, []);
 let currentTab = 'benefs';
 let currentDistId = null;
 let editingBenefId = null;
+let editingDistId = null;
 let editingPartKey = null;
 let pickerDistId = null;
 let pickerContextDistId = null;
@@ -425,13 +426,33 @@ function deleteBenef(benefId) {
   showToast('Bénéficiaire supprimé');
 }
 
-function newDistribution() {
-  const dist = { id: uid(), date: todayStr(), participants: [] };
-  dists.unshift(dist);
-  currentDistId = dist.id;
-  persist();
-  switchTab('dists');
-  showToast('Nouvelle distribution créée');
+function openDistDialog(distId) {
+  editingDistId = distId || null;
+  const dist = distId ? dists.find((d) => d.id === distId) : null;
+  $('dialogDistTitle').textContent = dist ? 'Modifier la distribution' : 'Nouvelle distribution';
+  $('fDistDate').value = dist ? dist.date : todayStr();
+  if (!$('dialogDist').open) $('dialogDist').showModal();
+}
+
+function saveDist(e) {
+  e.preventDefault();
+  const date = $('fDistDate').value;
+  if (!date) return;
+  if (editingDistId) {
+    const dist = dists.find((d) => d.id === editingDistId);
+    if (dist) dist.date = date;
+    persist();
+    showToast('Date modifiée');
+  } else {
+    const dist = { id: uid(), date, participants: [] };
+    dists.unshift(dist);
+    currentDistId = dist.id;
+    persist();
+    switchTab('dists');
+    showToast('Nouvelle distribution créée');
+  }
+  $('dialogDist').close();
+  render();
 }
 
 function renderDistList() {
@@ -446,6 +467,8 @@ function renderDistList() {
         <div class="item-meta">${d.participants.length} foyer(s) · ${totalPersonnes(d)} pers. · encaissé ${eur(encaisse)} / attendu ${eur(attendu)}</div>
       </div>
       <div class="item-actions">
+        <button class="icon-btn" data-act="export" aria-label="Exporter en Excel">📊</button>
+        <button class="icon-btn" data-act="date" aria-label="Modifier la date">🗓️</button>
         <button class="icon-btn" data-act="del" aria-label="Supprimer">🗑️</button>
       </div>
     </div>`;
@@ -618,6 +641,10 @@ document.addEventListener('click', (e) => {
   if (distItem && !currentDistId && $('distListView') && !$('distListView').classList.contains('hidden')) {
     const act = e.target.closest('[data-act]');
     if (act && act.dataset.act === 'del') deleteDist(distItem.dataset.dist);
+    else if (act && act.dataset.act === 'export') {
+      const dist = dists.find((d) => d.id === distItem.dataset.dist);
+      if (dist) exportDistribution(dist);
+    } else if (act && act.dataset.act === 'date') openDistDialog(distItem.dataset.dist);
     else {
       currentDistId = distItem.dataset.dist;
       render();
@@ -659,7 +686,10 @@ $('fileImport').addEventListener('change', (e) => {
 $('formBenef').addEventListener('submit', saveBenef);
 $('btnCancelBenef').addEventListener('click', () => $('dialogBenef').close());
 
-$('btnNewDist').addEventListener('click', newDistribution);
+$('btnNewDist').addEventListener('click', () => openDistDialog(null));
+$('formDist').addEventListener('submit', saveDist);
+$('btnCancelDist').addEventListener('click', () => $('dialogDist').close());
+$('btnEditDistDate').addEventListener('click', () => openDistDialog(currentDistId));
 $('btnBackDists').addEventListener('click', () => {
   currentDistId = null;
   render();

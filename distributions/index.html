@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Distributions">
+  <meta name="theme-color" content="#248a3d">
+  <title>Distributions</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <h1>🧺 Distributions</h1>
+    <div class="header-actions">
+      <button id="btnImport" class="btn-scan" type="button" aria-label="Importer un fichier bénéficiaires">📥</button>
+      <button id="btnExport" class="btn-export" type="button">📊 Excel</button>
+      <button id="btnAddBenef" class="btn-primary" type="button">+ Bénéf.</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="benefs" type="button">Bénéficiaires</button>
+    <button class="tab" data-tab="dists" type="button">Distributions</button>
+  </nav>
+
+  <input type="file" id="fileImport" accept=".xlsx,.csv" class="hidden">
+
+  <main>
+    <section id="tabBenefs">
+      <div class="toolbar">
+        <input type="search" id="benefSearch" placeholder="Rechercher un bénéficiaire…" autocomplete="off">
+      </div>
+      <div id="benefList" class="list"></div>
+      <div id="emptyBenefs" class="empty hidden">
+        <p>Aucun bénéficiaire</p>
+        <p class="hint">Importez le fichier Excel du secours (📥) ou créez un bénéficiaire avec « + Bénéf. ».</p>
+      </div>
+    </section>
+
+    <section id="tabDists" class="hidden">
+      <div id="distListView">
+        <div id="distList" class="list"></div>
+        <div id="emptyDists" class="empty hidden">
+          <p>Aucune distribution</p>
+          <p class="hint">Touchez « + Distribution » le jour de la distribution pour enregistrer les venus.</p>
+        </div>
+        <div class="main-actions">
+          <button id="btnNewDist" class="btn-primary big" type="button">+ Distribution</button>
+        </div>
+      </div>
+
+      <div id="distDetailView" class="hidden">
+        <div class="toolbar">
+          <button id="btnBackDists" class="btn-ghost" type="button">← Retour</button>
+          <span id="distDate" class="detail-date"></span>
+          <button id="btnExportDist" class="btn-export" type="button">📊 Excel</button>
+        </div>
+
+        <section class="summary">
+          <div class="summary-card">
+            <span class="summary-num" id="sumFoyers">0</span>
+            <span class="summary-label">Foyers</span>
+          </div>
+          <div class="summary-card">
+            <span class="summary-num" id="sumPersonnes">0</span>
+            <span class="summary-label">Personnes</span>
+          </div>
+          <div class="summary-card">
+            <span class="summary-num" id="sumPaye">0,00 €</span>
+            <span class="summary-label">Encaissé</span>
+          </div>
+          <div class="summary-card">
+            <span class="summary-num" id="sumAttendu">0,00 €</span>
+            <span class="summary-label">Attendu</span>
+          </div>
+        </section>
+
+        <div id="partList" class="list"></div>
+        <div id="emptyParts" class="empty hidden">
+          <p>Personne enregistré pour l'instant</p>
+          <p class="hint">Touchez « + Présence » au passage de chaque famille.</p>
+        </div>
+        <div class="main-actions">
+          <button id="btnAddPart" class="btn-primary big" type="button">+ Présence</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <dialog id="dialogBenef" class="dialog">
+    <form id="formBenef">
+      <h2 id="dialogBenefTitle">Nouveau bénéficiaire</h2>
+      <p class="hint" id="fBenefId"></p>
+      <div class="row">
+        <label>Nom
+          <input type="text" id="fNom" required placeholder="DUPONT">
+        </label>
+        <label>Prénom
+          <input type="text" id="fPrenom" placeholder="Marie">
+        </label>
+      </div>
+      <label>Date de naissance
+        <input type="date" id="fNaissance">
+      </label>
+      <label>Téléphone
+        <input type="tel" id="fTel" placeholder="06 12 34 56 78">
+      </label>
+      <label>Statut
+        <select id="fStatut">
+          <option value="">— Non renseigné —</option>
+        </select>
+      </label>
+      <label>Nombre de personnes dans la famille
+        <input type="number" id="fNb" min="1" max="20" placeholder="4">
+      </label>
+      <div class="dialog-actions">
+        <button type="button" class="btn-ghost" id="btnCancelBenef">Annuler</button>
+        <button type="submit" class="btn-primary">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dialogPicker" class="dialog dialog-wide">
+    <h2>Enregistrer une présence</h2>
+    <label>Rechercher
+      <input type="search" id="pickerSearch" placeholder="Nom, prénom, identifiant…" autocomplete="off">
+    </label>
+    <div id="pickerList" class="picker-list"></div>
+    <div id="pickerEmpty" class="empty hidden">
+      <p id="pickerQuery"></p>
+      <p class="hint">Cette personne n'est pas enregistrée ? Créez-lui une fiche provisoire.</p>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="btn-ghost" id="btnClosePicker">Fermer</button>
+      <button type="button" class="btn-primary" id="btnNewBenefInPicker">+ Nouveau bénéficiaire</button>
+    </div>
+  </dialog>
+
+  <dialog id="dialogPay" class="dialog">
+    <form id="formPay">
+      <h2 id="payTitle">Paiement</h2>
+      <p class="hint" id="paySolde"></p>
+      <p class="total-line" id="payTotal"></p>
+      <label>Montant versé
+        <input type="text" id="payMontant" inputmode="decimal" required>
+      </label>
+      <div class="chips">
+        <button type="button" class="chip" data-amount="1.00">1,00 €</button>
+        <button type="button" class="chip" data-amount="0.50">0,50 €</button>
+        <button type="button" class="chip" data-amount="0.00">0,00 €</button>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn-ghost" id="btnCancelPay">Annuler</button>
+        <button type="submit" class="btn-primary">Valider</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="xlsx.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

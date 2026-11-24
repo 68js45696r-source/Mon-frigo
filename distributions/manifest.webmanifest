@@ -1,0 +1,16 @@
+{
+  "name": "Distributions",
+  "short_name": "Distributions",
+  "description": "Gestion des distributions du secours : bénéficiaires (fichier Excel), présences, paiement de 1 €, soldes et exports Excel.",
+  "lang": "fr",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#f2f4f7",
+  "theme_color": "#248a3d",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

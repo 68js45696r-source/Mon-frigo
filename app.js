@@ -420,20 +420,34 @@ function showToast(msg) {
   showToast._timer = setTimeout(() => t.classList.add('hidden'), 2500);
 }
 
+let beepCtx = null;
+
+function unlockAudio() {
+  try {
+    if (!beepCtx) beepCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (beepCtx.state === 'suspended') beepCtx.resume();
+  } catch {}
+}
+
 function beep() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.connect(g);
-    g.connect(ctx.destination);
-    o.type = 'sine';
-    o.frequency.value = 880;
-    g.gain.setValueAtTime(0.15, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    o.start();
-    o.stop(ctx.currentTime + 0.25);
-    setTimeout(() => ctx.close(), 500);
+    if (!beepCtx || beepCtx.state !== 'running') unlockAudio();
+    if (!beepCtx || beepCtx.state !== 'running') return;
+    const t0 = beepCtx.currentTime;
+    [[0, 1180], [0.12, 1560]].forEach(([delay, freq]) => {
+      const o = beepCtx.createOscillator();
+      const g = beepCtx.createGain();
+      o.connect(g);
+      g.connect(beepCtx.destination);
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.001, t0 + delay);
+      g.gain.exponentialRampToValueAtTime(0.4, t0 + delay + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + delay + 0.1);
+      o.start(t0 + delay);
+      o.stop(t0 + delay + 0.12);
+    });
+    if (navigator.vibrate) navigator.vibrate(60);
   } catch {}
 }
 
@@ -561,6 +575,7 @@ if ('BarcodeDetector' in window) {
 }
 
 async function startScanner() {
+  unlockAudio();
   const video = $('scanVideo');
   $('scanner').classList.remove('hidden');
   $('scanHint').classList.add('hidden');

@@ -263,33 +263,55 @@ function exportBenefits() {
   showToast('Export Excel généré');
 }
 
+function composition(statut, nb) {
+  const n = norm(statut);
+  const adultes = (n.includes('couple') && !n.includes('monoparentale')) ? Math.min(2, nb) : Math.min(1, nb);
+  return { adultes, enfants: Math.max(0, nb - adultes) };
+}
+
 function exportDistribution(dist) {
-  const rows = [
-    [`Distribution du ${fmtDate(dist.date)}`],
-    [],
-    ['Identifiant', 'Nom', 'Prénom', 'Téléphone', 'Statut', 'Nb personnes', 'Solde antérieur', 'Attendu', 'Payé', 'Solde restant']
-  ];
   let totalPaye = 0;
+  let totalAdultes = 0;
+  let totalEnfants = 0;
+  let totalAVenir = 0;
   const attendu = dist.participants.length * TARIF;
+  const dataRows = [
+    ['Identifiant', 'Nom', 'Prénom', 'Téléphone', 'Statut', 'Nb personnes', 'Adultes', 'Enfants', 'Solde antérieur', 'Attendu', 'Payé', 'Solde restant']
+  ];
   for (const p of dist.participants) {
     const b = benefById(p.benefId);
     if (!b) continue;
     const avant = soldeOf(b.id, dist.id);
+    const c = composition(b.statut, p.nbPersonnes);
+    const restant = Math.max(0, avant + TARIF - payeOf(p));
     totalPaye += payeOf(p);
-    rows.push([
+    totalAdultes += c.adultes;
+    totalEnfants += c.enfants;
+    totalAVenir += restant;
+    dataRows.push([
       b.id,
       b.nom,
       b.prenom,
       b.tel || '',
       b.statut || '',
       p.nbPersonnes,
+      c.adultes,
+      c.enfants,
       avant !== 0 ? eur(avant) : '',
       TARIF,
       payeOf(p),
-      avant + TARIF - payeOf(p)
+      restant
     ]);
   }
-  rows.push(['TOTAL', '', '', '', '', totalPersonnes(dist), '', attendu, Math.round(totalPaye * 100) / 100, '']);
+  dataRows.push(['TOTAL', '', '', '', '', totalPersonnes(dist), totalAdultes, totalEnfants, '', attendu, Math.round(totalPaye * 100) / 100, Math.round(totalAVenir * 100) / 100]);
+  const rows = [
+    [`Distribution du ${fmtDate(dist.date)}`],
+    [],
+    ['Foyers (référents)', 'Adultes', 'Enfants', 'Euros récupérés', 'Euros à venir'],
+    [dist.participants.length, totalAdultes, totalEnfants, eur(Math.round(totalPaye * 100) / 100), eur(Math.round(totalAVenir * 100) / 100)],
+    [],
+    ...dataRows
+  ];
   const benefRows = [EXPORT_BENEF_HEADERS.slice()];
   for (const b of [...benefits].sort((a, b2) => a.nom.localeCompare(b2.nom, 'fr'))) {
     benefRows.push([b.id, b.nom, b.prenom, b.naissance ? fmtDate(b.naissance) : '', b.tel || '', b.statut || '', b.nbPersonnes ?? '']);

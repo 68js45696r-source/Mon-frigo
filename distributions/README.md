@@ -13,7 +13,7 @@ Une application web (PWA) pour gérer les distributions de colis alimentaires : 
 - **Compteurs en direct** : foyers, personnes, encaissé (total réellement payé) et attendu
 - **Export Excel (📊)** :
   - depuis l'onglet Bénéficiaires : le fichier complet avec soldes (réimportable tel quel)
-  - depuis une distribution : l'état des bénéficiaires de la distribution avec solde antérieur, attendu, payé, solde restant et la ligne TOTAL — export possible sur **chaque distribution de la liste** (bouton 📊), donc pour n'importe quelle date passée
+- depuis une distribution : l'état des bénéficiaires de la distribution — récapitulatif en tête (nb de foyers/réfèrents, adultes, enfants, euros récupérés, euros à venir), une ligne par famille avec solde antérieur, attendu, payé, solde restant, puis la ligne TOTAL. Adultes = 2 pour les couples, 1 sinon ; enfants = nb de personnes − adultes. Export possible sur **chaque distribution de la liste** (bouton 📊), donc pour n'importe quelle date passée
 - **Hors ligne** : tout fonctionne sans connexion, données stockées sur l'appareil (localStorage)
 - **Mode sombre** automatique, interface en français
 

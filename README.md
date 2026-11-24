@@ -4,6 +4,7 @@ Une application web (PWA) pour lister le contenu de votre réfrigérateur, suivr
 
 ## Fonctionnalités
 
+- **Scanner de codes-barres** (📷) : EAN-13 et EAN-8 décodés directement dans le navigateur, nom du produit récupéré automatiquement via Open Food Facts — il ne reste que la date à saisir. Produit inconnu -> le nom est demandé une fois puis mémorisé. Produit déjà listé -> le stock est incrémenté automatiquement.
 - **Ajout de produits** : nom, quantité, unité, catégorie, date de consommation, seuil d'alerte stock bas
 - **Alertes par dates** : produits périmés (rouge), périssant sous 2 jours (orange), à consommer aujourd'hui
 - **Alertes de stock** : badge « Stock bas » quand la quantité passe sous votre seuil
@@ -19,7 +20,7 @@ L'app doit d'abord être hébergée en ligne (HTTPS obligatoire pour l'installat
 
 1. Mettre les fichiers dans un dépôt GitHub
 2. Activer *Settings → Pages → Deploy from branch* sur la branche principale
-3. Sur l'iPhone, ouvrir l'URL du site dans **Safari**
+3. Sur l'iPhone, ouvrir l'URL du site dans **Safari** et autoriser la caméra quand l'application le demande (pour le scanner)
 4. Toucher le bouton **Partager** → **Sur l'écran d'accueil** → **Ajouter**
 5. L'app apparaît avec son icône flocon ❄️ et s'ouvre en plein écran comme une vraie app
 

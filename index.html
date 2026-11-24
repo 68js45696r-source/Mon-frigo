@@ -17,7 +17,10 @@
 <body>
   <header class="header">
     <h1>🧊 Mon Frigo</h1>
-    <button id="btnAdd" class="btn-primary" type="button">+ Ajouter</button>
+    <div class="header-actions">
+      <button id="btnScan" class="btn-scan" type="button" aria-label="Scanner un code-barres">📷</button>
+      <button id="btnAdd" class="btn-primary" type="button">+ Ajouter</button>
+    </div>
   </header>
 
   <div id="alertBanner" class="alert-banner hidden"></div>
@@ -54,6 +57,17 @@
     <p>Votre frigo est vide 🥶</p>
     <p class="hint">Touchez « + Ajouter » pour renseigner vos premiers produits.</p>
   </div>
+
+  <div id="scanner" class="scanner hidden">
+    <video id="scanVideo" playsinline muted autoplay></video>
+    <canvas id="scanCanvas" class="hidden"></canvas>
+    <div class="scan-frame" aria-hidden="true"></div>
+    <button id="btnCloseScanner" class="scanner-close" type="button" aria-label="Fermer">✕</button>
+    <p id="scanStatus" class="scan-status">Alignez le code-barres dans le cadre</p>
+    <p id="scanHint" class="scan-hint hidden">Caméra inaccessible — utilisez « + Ajouter »</p>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
 
   <dialog id="dialog" class="dialog">
     <form id="form" method="dialog:cancel">

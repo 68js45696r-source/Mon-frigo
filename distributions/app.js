@@ -245,18 +245,14 @@ async function importFile(file) {
   }
 }
 
-function benefRecap(b) {
-  const bits = [b.id, benefFull(b)];
-  if (b.naissance) bits.push('né(e) le ' + fmtDate(b.naissance));
-  if (b.tel) bits.push(b.tel);
-  if (b.provisoire) bits.push('provisoire');
-  return bits.join(' · ');
-}
-
 function openDupesDialog() {
   if (!pendingDupes.length) return;
   renderDupes();
   if (!$('dialogDupes').open) $('dialogDupes').showModal();
+}
+
+function dupeLine(id, nomPrenom, naissance, tel, provisoireTag) {
+  return `Identifiant : <strong>${escapeHtml(id || 'non renseigné')}</strong> · Nom/Prénom : ${escapeHtml(nomPrenom)} · Date de naissance : ${naissance ? fmtDate(naissance) : 'non renseignée'} · Tél : ${escapeHtml(tel || 'non renseigné')}${provisoireTag ? ' · <em>provisoire</em>' : ''}`;
 }
 
 function renderDupes() {
@@ -264,11 +260,11 @@ function renderDupes() {
   list.innerHTML = pendingDupes.map((item, i) => {
     const d = item.data;
     const importe = `<div class="item-info">
-      Fichier : <strong>${escapeHtml(d.id || 'sans identifiant')}</strong><br>${escapeHtml(`${d.prenom || ''} ${d.nom}`.trim())}${d.naissance ? ' · ' + fmtDate(d.naissance) : ''}${d.tel ? ' · ' + escapeHtml(d.tel) : ''}
+      📄 Fichier secours : <div class="dupe-fields">${dupeLine(d.id, `${d.prenom || ''} ${d.nom}`.trim(), d.naissance, d.tel, false)}</div>
     </div>`;
     const candidats = item.candidates.length
       ? item.candidates.map((c, j) => `<div class="dupe-candidate">
-          Dans l'appli : <strong>${escapeHtml(c.id)}</strong>${escapeHtml(benefFull(c) !== c.id ? ' · ' + benefFull(c) : '')}${c.naissance ? ' · ' + fmtDate(c.naissance) : ''}${c.provisoire ? ' · provisoire' : ''}
+          🧺 Appli (${c.provisoire ? 'identifiant créé P-xxxx' : 'identifiant secours'}) : <div class="dupe-fields">${dupeLine(c.id, benefFull(c), c.naissance, c.tel, c.provisoire)}</div>
           <button type="button" class="pill pill-ok" data-dupe="${i}" data-cand="${j}">Fusionner</button>
         </div>`).join('')
       : '<div class="dupe-candidate">Aucun bénéficiaire enregistré ne correspond</div>';

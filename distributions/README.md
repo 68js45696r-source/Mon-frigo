@@ -21,10 +21,10 @@ Une application web (PWA) pour gérer les distributions de colis alimentaires : 
 
 La première ligne de colonnes reconnue sert d'en-tête (accents et majuscules indifférents) :
 
-| Identifiant | Nom | Prénom | Date de naissance | Téléphone | Statut | Nb de personnes |
-|---|---|---|---|---|---|---|
+| Identifiant | Provisoire | Nom | Prénom | Date de naissance | Téléphone | Statut | Nb de personnes |
+|---|---|---|---|---|---|---|---|
 
-Seule la colonne **Nom** est indispensable ; les lignes sans identifiant reçoivent un identifiant provisoire. Les dates `jj/mm/aaaa` et les dates Excel sont acceptées. L'export « Bénéficiaires » de l'application respecte exactement ce format : vous pouvez le modifier dans Excel puis le réimporter.
+Seule la colonne **Nom** est indispensable ; les lignes sans identifiant reçoivent un identifiant provisoire. La colonne **Provisoire** (juste après l'identifiant) marque les fiches provisoires : `Oui` = fiche provisoire, vide ou `Non` = fiche déclarée au secours. Elle est notamment remplie automatiquement par l'export de l'application. Les dates `jj/mm/aaaa` et les dates Excel sont acceptées. L'export « Bénéficiaires » de l'application respecte exactement ce format : vous pouvez le modifier dans Excel puis le réimporter.
 
 ## Installation sur iPhone / Android
 

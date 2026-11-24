@@ -130,10 +130,11 @@ const HEADER_MAP = {
   naissance: ['datedenaissance', 'naissance', 'datenaissance', 'dob'],
   tel: ['telephone', 'tel', 'numerodetelephone', 'portable', 'gsm'],
   statut: ['statut', 'situation', 'situationfamiliale', 'composition', 'compositionfamiliale', 'typefamille'],
-  nb: ['nbdepersonnes', 'nbpersonnes', 'nombresdepersonnes', 'nombredepersonnes', 'personnes', 'taillefamille', 'nbpersonnesdanslafamille', 'nbpersonnesfamille']
+  nb: ['nbdepersonnes', 'nbpersonnes', 'nombresdepersonnes', 'nombredepersonnes', 'personnes', 'taillefamille', 'nbpersonnesdanslafamille', 'nbpersonnesfamille'],
+  provisoire: ['provisoire', 'temporaire', 'provisional']
 };
 
-const COLS = ['id', 'nom', 'prenom', 'naissance', 'tel', 'statut', 'nb'];
+const COLS = ['id', 'provisoire', 'nom', 'prenom', 'naissance', 'tel', 'statut', 'nb'];
 
 function mapHeaders(header) {
   const idx = {};
@@ -146,11 +147,17 @@ function mapHeaders(header) {
   return idx;
 }
 
+function parseProvisoire(v) {
+  const n = norm(v);
+  return ['oui', 'o', 'true', '1', 'x', 'provisoire', 'provisional', 'yes', 'y'].includes(n);
+}
+
 function rowToBenef(row, idx) {
   const get = (k) => (idx[k] !== undefined ? String(row[idx[k]] ?? '').trim() : '');
   const nb = toNumber(get('nb'));
   return {
     id: get('id'),
+    provisoire: idx.provisoire !== undefined ? parseProvisoire(get('provisoire')) : null,
     nom: get('nom'),
     prenom: get('prenom'),
     naissance: toIsoDate(get('naissance')),
@@ -199,7 +206,7 @@ async function importFile(file) {
         if (data[k]) existing[k] = data[k];
       }
       if (data.nbPersonnes) existing.nbPersonnes = data.nbPersonnes;
-      existing.provisoire = false;
+      existing.provisoire = data.provisoire !== null ? data.provisoire : false;
       updated++;
     } else {
       const id = data.id || nextProvisionalId();
@@ -212,7 +219,7 @@ async function importFile(file) {
         tel: data.tel,
         statut: data.statut,
         nbPersonnes: data.nbPersonnes,
-        provisoire: !data.id
+        provisoire: data.provisoire !== null ? data.provisoire : !data.id
       };
       benefits.push(benef);
       byId.set(id.toLowerCase(), benef);
@@ -237,7 +244,7 @@ function downloadXlsx(sheets, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-const EXPORT_BENEF_HEADERS = ['Identifiant', 'Nom', 'Prénom', 'Date de naissance', 'Téléphone', 'Statut', 'Nb de personnes'];
+const EXPORT_BENEF_HEADERS = ['Identifiant', 'Provisoire', 'Nom', 'Prénom', 'Date de naissance', 'Téléphone', 'Statut', 'Nb de personnes'];
 
 function exportBenefits() {
   if (!benefits.length) {
@@ -249,14 +256,14 @@ function exportBenefits() {
     const solde = soldeOf(b.id, null);
     rows.push([
       b.id,
+      b.provisoire ? 'Oui' : '',
       b.nom,
       b.prenom,
       b.naissance ? fmtDate(b.naissance) : '',
       b.tel || '',
       b.statut || '',
       b.nbPersonnes ?? '',
-      solde !== 0 ? eur(solde) : '',
-      b.provisoire ? 'Oui' : ''
+      solde !== 0 ? eur(solde) : ''
     ]);
   }
   downloadXlsx([{ name: 'Bénéficiaires', rows }], `beneficiaires-${todayStr().replace(/-/g, '')}.xlsx`);
@@ -314,7 +321,7 @@ function exportDistribution(dist) {
   ];
   const benefRows = [EXPORT_BENEF_HEADERS.slice()];
   for (const b of [...benefits].sort((a, b2) => a.nom.localeCompare(b2.nom, 'fr'))) {
-    benefRows.push([b.id, b.nom, b.prenom, b.naissance ? fmtDate(b.naissance) : '', b.tel || '', b.statut || '', b.nbPersonnes ?? '']);
+    benefRows.push([b.id, b.provisoire ? 'Oui' : '', b.nom, b.prenom, b.naissance ? fmtDate(b.naissance) : '', b.tel || '', b.statut || '', b.nbPersonnes ?? '']);
   }
   downloadXlsx(
     [{ name: 'Présences', rows }, { name: 'Bénéficiaires', rows: benefRows }],

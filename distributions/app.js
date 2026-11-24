@@ -11,6 +11,7 @@ let dists = load(STORAGE.dists, []);
 let currentTab = 'benefs';
 let currentDistId = null;
 let editingBenefId = null;
+let editingDistId = null;
 let editingPartKey = null;
 let pickerDistId = null;
 let pickerContextDistId = null;
@@ -262,33 +263,55 @@ function exportBenefits() {
   showToast('Export Excel généré');
 }
 
+function composition(statut, nb) {
+  const n = norm(statut);
+  const adultes = (n.includes('couple') && !n.includes('monoparentale')) ? Math.min(2, nb) : Math.min(1, nb);
+  return { adultes, enfants: Math.max(0, nb - adultes) };
+}
+
 function exportDistribution(dist) {
-  const rows = [
-    [`Distribution du ${fmtDate(dist.date)}`],
-    [],
-    ['Identifiant', 'Nom', 'Prénom', 'Téléphone', 'Statut', 'Nb personnes', 'Solde antérieur', 'Attendu', 'Payé', 'Solde restant']
-  ];
   let totalPaye = 0;
+  let totalAdultes = 0;
+  let totalEnfants = 0;
+  let totalAVenir = 0;
   const attendu = dist.participants.length * TARIF;
+  const dataRows = [
+    ['Identifiant', 'Nom', 'Prénom', 'Téléphone', 'Statut', 'Nb personnes', 'Adultes', 'Enfants', 'Solde antérieur', 'Attendu', 'Payé', 'Solde restant']
+  ];
   for (const p of dist.participants) {
     const b = benefById(p.benefId);
     if (!b) continue;
     const avant = soldeOf(b.id, dist.id);
+    const c = composition(b.statut, p.nbPersonnes);
+    const restant = Math.max(0, avant + TARIF - payeOf(p));
     totalPaye += payeOf(p);
-    rows.push([
+    totalAdultes += c.adultes;
+    totalEnfants += c.enfants;
+    totalAVenir += restant;
+    dataRows.push([
       b.id,
       b.nom,
       b.prenom,
       b.tel || '',
       b.statut || '',
       p.nbPersonnes,
+      c.adultes,
+      c.enfants,
       avant !== 0 ? eur(avant) : '',
       TARIF,
       payeOf(p),
-      avant + TARIF - payeOf(p)
+      restant
     ]);
   }
-  rows.push(['TOTAL', '', '', '', '', totalPersonnes(dist), '', attendu, Math.round(totalPaye * 100) / 100, '']);
+  dataRows.push(['TOTAL', '', '', '', '', totalPersonnes(dist), totalAdultes, totalEnfants, '', attendu, Math.round(totalPaye * 100) / 100, Math.round(totalAVenir * 100) / 100]);
+  const rows = [
+    [`Distribution du ${fmtDate(dist.date)}`],
+    [],
+    ['Foyers (référents)', 'Adultes', 'Enfants', 'Euros récupérés', 'Euros à venir'],
+    [dist.participants.length, totalAdultes, totalEnfants, eur(Math.round(totalPaye * 100) / 100), eur(Math.round(totalAVenir * 100) / 100)],
+    [],
+    ...dataRows
+  ];
   const benefRows = [EXPORT_BENEF_HEADERS.slice()];
   for (const b of [...benefits].sort((a, b2) => a.nom.localeCompare(b2.nom, 'fr'))) {
     benefRows.push([b.id, b.nom, b.prenom, b.naissance ? fmtDate(b.naissance) : '', b.tel || '', b.statut || '', b.nbPersonnes ?? '']);
@@ -425,13 +448,33 @@ function deleteBenef(benefId) {
   showToast('Bénéficiaire supprimé');
 }
 
-function newDistribution() {
-  const dist = { id: uid(), date: todayStr(), participants: [] };
-  dists.unshift(dist);
-  currentDistId = dist.id;
-  persist();
-  switchTab('dists');
-  showToast('Nouvelle distribution créée');
+function openDistDialog(distId) {
+  editingDistId = distId || null;
+  const dist = distId ? dists.find((d) => d.id === distId) : null;
+  $('dialogDistTitle').textContent = dist ? 'Modifier la distribution' : 'Nouvelle distribution';
+  $('fDistDate').value = dist ? dist.date : todayStr();
+  if (!$('dialogDist').open) $('dialogDist').showModal();
+}
+
+function saveDist(e) {
+  e.preventDefault();
+  const date = $('fDistDate').value;
+  if (!date) return;
+  if (editingDistId) {
+    const dist = dists.find((d) => d.id === editingDistId);
+    if (dist) dist.date = date;
+    persist();
+    showToast('Date modifiée');
+  } else {
+    const dist = { id: uid(), date, participants: [] };
+    dists.unshift(dist);
+    currentDistId = dist.id;
+    persist();
+    switchTab('dists');
+    showToast('Nouvelle distribution créée');
+  }
+  $('dialogDist').close();
+  render();
 }
 
 function renderDistList() {
@@ -446,6 +489,8 @@ function renderDistList() {
         <div class="item-meta">${d.participants.length} foyer(s) · ${totalPersonnes(d)} pers. · encaissé ${eur(encaisse)} / attendu ${eur(attendu)}</div>
       </div>
       <div class="item-actions">
+        <button class="icon-btn" data-act="export" aria-label="Exporter en Excel">📊</button>
+        <button class="icon-btn" data-act="date" aria-label="Modifier la date">🗓️</button>
         <button class="icon-btn" data-act="del" aria-label="Supprimer">🗑️</button>
       </div>
     </div>`;
@@ -618,6 +663,10 @@ document.addEventListener('click', (e) => {
   if (distItem && !currentDistId && $('distListView') && !$('distListView').classList.contains('hidden')) {
     const act = e.target.closest('[data-act]');
     if (act && act.dataset.act === 'del') deleteDist(distItem.dataset.dist);
+    else if (act && act.dataset.act === 'export') {
+      const dist = dists.find((d) => d.id === distItem.dataset.dist);
+      if (dist) exportDistribution(dist);
+    } else if (act && act.dataset.act === 'date') openDistDialog(distItem.dataset.dist);
     else {
       currentDistId = distItem.dataset.dist;
       render();
@@ -659,7 +708,10 @@ $('fileImport').addEventListener('change', (e) => {
 $('formBenef').addEventListener('submit', saveBenef);
 $('btnCancelBenef').addEventListener('click', () => $('dialogBenef').close());
 
-$('btnNewDist').addEventListener('click', newDistribution);
+$('btnNewDist').addEventListener('click', () => openDistDialog(null));
+$('formDist').addEventListener('submit', saveDist);
+$('btnCancelDist').addEventListener('click', () => $('dialogDist').close());
+$('btnEditDistDate').addEventListener('click', () => openDistDialog(currentDistId));
 $('btnBackDists').addEventListener('click', () => {
   currentDistId = null;
   render();

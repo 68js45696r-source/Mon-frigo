@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mon Frigo">
+  <meta name="theme-color" content="#0a84ff">
+  <title>Mon Frigo</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <h1>🧊 Mon Frigo</h1>
+    <button id="btnAdd" class="btn-primary" type="button">+ Ajouter</button>
+  </header>
+
+  <div id="alertBanner" class="alert-banner hidden"></div>
+
+  <section class="summary" id="summary">
+    <div class="summary-card" data-filter="expired">
+      <span class="summary-num" id="sumExpired">0</span>
+      <span class="summary-label">Périmés</span>
+    </div>
+    <div class="summary-card" data-filter="soon">
+      <span class="summary-num" id="sumSoon">0</span>
+      <span class="summary-label">Bientôt</span>
+    </div>
+    <div class="summary-card" data-filter="low">
+      <span class="summary-num" id="sumLow">0</span>
+      <span class="summary-label">Stock bas</span>
+    </div>
+    <div class="summary-card" data-filter="all">
+      <span class="summary-num" id="sumTotal">0</span>
+      <span class="summary-label">Total</span>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="Rechercher…" autocomplete="off">
+    <select id="filterCategory">
+      <option value="">Toutes catégories</option>
+    </select>
+  </div>
+
+  <main id="list" class="list"></main>
+
+  <div id="empty" class="empty hidden">
+    <p>Votre frigo est vide 🥶</p>
+    <p class="hint">Touchez « + Ajouter » pour renseigner vos premiers produits.</p>
+  </div>
+
+  <dialog id="dialog" class="dialog">
+    <form id="form" method="dialog:cancel">
+      <h2 id="dialogTitle">Ajouter un produit</h2>
+      <label>Nom du produit
+        <input type="text" id="fName" required list="suggestions" placeholder="ex. Lait demi-écrémé">
+        <datalist id="suggestions"></datalist>
+      </label>
+      <div class="row">
+        <label>Quantité
+          <input type="number" id="fQty" min="0" step="any" required>
+        </label>
+        <label>Alerte stock bas si ≤
+          <input type="number" id="fMin" min="0" step="any" required>
+        </label>
+        <label>Unité
+          <select id="fUnit">
+            <option>pièce(s)</option>
+            <option>paquet(s)</option>
+            <option>brique(s)</option>
+            <option>bouteille(s)</option>
+            <option>boîte(s)</option>
+            <option>kg</option>
+            <option>g</option>
+            <option>L</option>
+            <option>mL</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label>Catégorie
+          <select id="fCategory">
+            <option>Fruits &amp; Légumes</option>
+            <option>Produits laitiers</option>
+            <option>Viande &amp; Poisson</option>
+            <option>Plats préparés</option>
+            <option>Boissons</option>
+            <option>Surgelés</option>
+            <option>Autre</option>
+          </select>
+        </label>
+        <label>Date de consommation
+          <input type="date" id="fExpiry">
+        </label>
+      </div>
+      <p class="hint">Sans date, le produit est suivi uniquement pour le stock.</p>
+      <div class="dialog-actions">
+        <button type="button" id="btnDelete" class="btn-danger hidden">Supprimer</button>
+        <button type="button" class="btn-ghost" id="btnCancel">Annuler</button>
+        <button type="submit" class="btn-primary">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

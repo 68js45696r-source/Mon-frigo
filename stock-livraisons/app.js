@@ -288,6 +288,7 @@ function openSortie(pid) {
   const p = produitById(pid);
   $('sortieProduit').textContent = `Produit : ${p.nom} (stock actuel : ${fmtQty(stockOf(pid))} ${p.unite})`;
   $('formSortie').reset();
+  $('sDate').value = todayStr();
   $('dialogSortie').showModal();
 }
 
@@ -306,7 +307,9 @@ $('formSortie').addEventListener('submit', (e) => {
     qty,
     bordereau: '',
     dateLivraison: '',
-    date: todayStr(),
+    lot: '',
+    dlc: '',
+    date: $('sDate').value || todayStr(),
     motif: $('sMotif').value.trim()
   });
   persist();

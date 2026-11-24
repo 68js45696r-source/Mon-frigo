@@ -8,10 +8,11 @@ Gestion du stock des produits livrés — application web (PWA) jumelle de « Mo
 - **Produits par type** : Conserves, Surgelés, Épiceries sèches (regroupés par sections)
 - **Stock = nombre de produits** (3 briques de lait = 3), unités de conditionnement uniquement (pièces, boîtes, paquets, bocaux, bidons, cartons)
 - **Stock initial** renseignable à la création du produit (enregistré comme une entrée « Stock initial »)
-- **Entrées de livraison** : quantité + **numéro de bordereau** + **date de livraison**, conservés dans l'historique
-- **Sorties de stock** : quantité + motif (consommation, casse…), avec garde-fou si la quantité dépasse le stock
+- **Entrées de livraison** : quantité + **numéro de bordereau** + **date de livraison** + **numéro de lot** + **date limite de consommation (DLC)** — champs obligatoires, conservés dans l'historique
+- **Fiche produit** : dernière livraison (bordereau, lot, date) et **DLC la plus proche** à venir
+- **Sorties de stock** : quantité + **date de la sortie** + motif (consommation, casse…), avec garde-fou si la quantité dépasse le stock
 - **Inventaire** : stock théorique vs stock réel saisi, **écarts calculés en direct** ; la validation enregistre automatiquement les ajustements comme mouvements
-- **Export Excel (.xlsx)** : 3 feuilles — *Stock actuel*, *Mouvements* (chaque entrée/sortie avec bordereau et date de livraison), *Inventaires* (théorique / réel / écart). Génération de fichier Open XML native, sans dépendance
+- **Export Excel (.xlsx)** : 3 feuilles — *Stock actuel*, *Mouvements* (chaque entrée/sortie : date, bordereau, livraison, lot, DLC ou motif), *Inventaires* (théorique / réel / écart). Génération de fichier Open XML native, sans dépendance
 - **Hors ligne**, données stockées sur l'appareil (localStorage), mode sombre automatique
 
 ## Installation sur iPhone
@@ -34,7 +35,7 @@ URL : `https://68js45696r-source.github.io/Mon-frigo/stock-livraisons/`
 ## Format des données
 
 - **Produits** : nom, type, unité, seuil d'alerte
-- **Mouvements** : date, sens (Entrée / Sortie / Inventaire), quantité, bordereau + date de livraison (pour les entrées), motif (pour les sorties)
+- **Mouvements** : date, sens (Entrée / Sortie / Inventaire), quantité, bordereau + date de livraison + lot + DLC (pour les entrées), date + motif (pour les sorties)
 - **Inventaires** : date + pour chaque produit compté : stock théorique, stock réel, écart
 
 ## Test de l'export

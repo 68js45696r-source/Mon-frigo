@@ -434,7 +434,7 @@ function beep() {
     if (!beepCtx || beepCtx.state !== 'running') unlockAudio();
     if (!beepCtx || beepCtx.state !== 'running') return;
     const t0 = beepCtx.currentTime;
-    [[0, 1180], [0.12, 1560]].forEach(([delay, freq]) => {
+    [[0, 1180], [0.22, 1560]].forEach(([delay, freq]) => {
       const o = beepCtx.createOscillator();
       const g = beepCtx.createGain();
       o.connect(g);
@@ -443,9 +443,10 @@ function beep() {
       o.frequency.value = freq;
       g.gain.setValueAtTime(0.001, t0 + delay);
       g.gain.exponentialRampToValueAtTime(0.4, t0 + delay + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.001, t0 + delay + 0.1);
+      g.gain.setValueAtTime(0.4, t0 + delay + 0.08);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + delay + 0.11);
       o.start(t0 + delay);
-      o.stop(t0 + delay + 0.12);
+      o.stop(t0 + delay + 0.13);
     });
     if (navigator.vibrate) navigator.vibrate(60);
   } catch {}

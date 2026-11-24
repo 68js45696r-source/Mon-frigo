@@ -1,4 +1,4 @@
-const CACHE = 'mon-frigo-v2';
+const CACHE = 'mon-frigo-v3';
 const ASSETS = [
   './',
   './index.html',

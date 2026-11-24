@@ -69,6 +69,24 @@ function lastDelivery(pid) {
   return best;
 }
 
+function lastEntry(pid) {
+  let best = null;
+  for (const m of mouvements) {
+    if (m.produitId === pid && m.sens === 'E' && (!best || (m.dateLivraison || '') >= (best.dateLivraison || ''))) best = m;
+  }
+  return best;
+}
+
+function nearestDlc(pid) {
+  const today = todayStr();
+  const dlcs = mouvements
+    .filter((m) => m.produitId === pid && m.sens === 'E' && m.dlc)
+    .map((m) => m.dlc);
+  if (!dlcs.length) return null;
+  const upcoming = dlcs.filter((d) => d >= today).sort();
+  return upcoming[0] || dlcs.slice().sort()[0];
+}
+
 function produitById(pid) {
   return produits.find((p) => p.id === pid);
 }
@@ -130,12 +148,11 @@ function renderProduitCard(p) {
   const lastDel = lastDelivery(p.id);
   let meta = `Type : ${p.type} · seuil ${fmtQty(p.seuil)} ${p.unite}`;
   if (lastDel) {
-    const bl = mouvements
-      .filter((m) => m.produitId === p.id && m.sens === 'E' && m.dateLivraison === lastDel)
-      .map((m) => m.bordereau)
-      .filter(Boolean);
-    meta += ` · Dernière livraison : ${bl.length ? escapeHtml(bl[bl.length - 1]) + ' · ' : ''}${fmtDate(lastDel)}`;
+    const le = lastEntry(p.id);
+    meta += ` · Dernière livraison : ${le.bordereau ? escapeHtml(le.bordereau) : '—'} · lot ${le.lot ? escapeHtml(le.lot) : '—'} · ${fmtDate(lastDel)}`;
   }
+  const dlc = nearestDlc(p.id);
+  if (dlc) meta += ` · DLC : ${fmtDate(dlc)}`;
   const states = [];
   if (stock <= 0) states.push('<span class="badge badge-zero">Rupture</span>');
   else if (low) states.push('<span class="badge badge-low">Stock bas</span>');
@@ -255,6 +272,8 @@ $('formEntree').addEventListener('submit', (e) => {
     qty: Number($('eQty').value),
     bordereau: $('eBordereau').value.trim(),
     dateLivraison: $('eDate').value,
+    lot: $('eLot').value.trim(),
+    dlc: $('eDlc').value,
     date: todayStr(),
     motif: ''
   });
@@ -312,7 +331,7 @@ function renderMouvements() {
     el.className = `item mvt-item mvt-${m.sens}`;
     let meta = `${fmtDate(m.date)} · ${p.type}`;
     if (m.sens === 'E') {
-      meta += ` · BL : ${m.bordereau ? escapeHtml(m.bordereau) : '—'} · livré le ${fmtDate(m.dateLivraison)}`;
+      meta += ` · BL : ${m.bordereau ? escapeHtml(m.bordereau) : '—'} · livré le ${fmtDate(m.dateLivraison)} · lot : ${m.lot ? escapeHtml(m.lot) : '—'} · DLC : ${m.dlc ? fmtDate(m.dlc) : '—'}`;
     } else if (m.motif) {
       meta += ` · ${escapeHtml(m.motif)}`;
     }
@@ -654,13 +673,12 @@ function makeZip(entries) {
 function buildWorkbookBytes() {
   const pMap = new Map(produits.map((p) => [p.id, p]));
 
-  const stockRows = [['Produit', 'Type', 'Stock actuel', 'Unité', 'Seuil alerte', 'État', 'Dernier bordereau', 'Date livraison']];
+  const stockRows = [['Produit', 'Type', 'Stock actuel', 'Unité', 'Seuil alerte', 'État', 'Dernier bordereau', 'Date livraison', 'Dernier n° de lot', 'DLC la plus proche']];
   for (const p of [...produits].sort((a, b) => a.type.localeCompare(b.type, 'fr') || a.nom.localeCompare(b.nom, 'fr'))) {
     const st = stockOf(p.id);
     const ld = lastDelivery(p.id);
-    const bl = ld
-      ? mouvements.filter((m) => m.produitId === p.id && m.sens === 'E' && m.dateLivraison === ld && m.bordereau).map((m) => m.bordereau)
-      : [];
+    const le = ld ? lastEntry(p.id) : null;
+    const dlc = nearestDlc(p.id);
     stockRows.push([
       p.nom,
       p.type,
@@ -668,12 +686,14 @@ function buildWorkbookBytes() {
       p.unite,
       p.seuil,
       st <= 0 ? 'Rupture' : st <= p.seuil ? 'Stock bas' : 'OK',
-      bl.length ? bl[bl.length - 1] : '',
-      ld ? fmtDate(ld) : ''
+      le && le.bordereau ? le.bordereau : '',
+      ld ? fmtDate(ld) : '',
+      le && le.lot ? le.lot : '',
+      dlc ? fmtDate(dlc) : ''
     ]);
   }
 
-  const mvtRows = [['Date', 'Type', 'Produit', 'Type produit', 'Quantité', 'Sens', 'Quantité signée', 'Unité', 'N° bordereau', 'Date livraison', 'Motif']];
+  const mvtRows = [['Date', 'Type', 'Produit', 'Type produit', 'Quantité', 'Sens', 'Quantité signée', 'Unité', 'N° bordereau', 'Date livraison', 'N° de lot', 'DLC', 'Motif']];
   const mvts = mouvements.slice().sort((a, b) => b.date.localeCompare(a.date) || (b.dateLivraison || '').localeCompare(a.dateLivraison || ''));
   for (const m of mvts) {
     const p = pMap.get(m.produitId);
@@ -689,6 +709,8 @@ function buildWorkbookBytes() {
       p.unite,
       m.bordereau || '',
       m.dateLivraison ? fmtDate(m.dateLivraison) : '',
+      m.lot || '',
+      m.dlc ? fmtDate(m.dlc) : '',
       m.motif || ''
     ]);
   }

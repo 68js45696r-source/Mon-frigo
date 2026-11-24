@@ -129,10 +129,16 @@
         <input type="number" id="eQty" min="0.001" step="any" required>
       </label>
       <label>N° de bordereau de livraison
-        <input type="text" id="eBordereau" placeholder="ex. BL-2026-0142">
+        <input type="text" id="eBordereau" required placeholder="ex. BL-2026-0142">
       </label>
       <label>Date de livraison
         <input type="date" id="eDate" required>
+      </label>
+      <label>N° de lot
+        <input type="text" id="eLot" required placeholder="ex. L-4471">
+      </label>
+      <label>Date limite de consommation (DLC)
+        <input type="date" id="eDlc" required>
       </label>
       <div class="dialog-actions">
         <button type="button" class="btn-ghost" data-close>Annuler</button>

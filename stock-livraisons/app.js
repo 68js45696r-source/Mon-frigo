@@ -335,8 +335,9 @@ function renderMouvements() {
     let meta = `${fmtDate(m.date)} · ${p.type}`;
     if (m.sens === 'E') {
       meta += ` · BL : ${m.bordereau ? escapeHtml(m.bordereau) : '—'} · livré le ${fmtDate(m.dateLivraison)} · lot : ${m.lot ? escapeHtml(m.lot) : '—'} · DLC : ${m.dlc ? fmtDate(m.dlc) : '—'}`;
-    } else if (m.motif) {
-      meta += ` · ${escapeHtml(m.motif)}`;
+    } else {
+      if (m.motif) meta += ` · ${escapeHtml(m.motif)}`;
+      if (m.sens === 'I' && m.comment) meta += ` · 💬 ${escapeHtml(m.comment)}`;
     }
     const sign = m.sens === 'S' ? '−' : '+';
     const cls = m.sens === 'S' ? 'mvt-neg' : 'mvt-pos';
@@ -378,16 +379,25 @@ function renderInventaire() {
       <span class="inv-theo" title="Stock théorique">${fmtQty(theo)} ${p.unite}</span>
       <input type="number" min="0" step="any" placeholder="Réel" data-reel>
       <span class="inv-ecart" data-ecart></span>`;
+    const comment = document.createElement('input');
+    comment.type = 'text';
+    comment.dataset.comment = '';
+    comment.className = 'inv-comment';
+    comment.placeholder = 'Commentaire sur l’écart (casse, perte, erreur…)';
+    comment.hidden = true;
+    el.appendChild(comment);
     const input = el.querySelector('[data-reel]');
     const ecartEl = el.querySelector('[data-ecart]');
     input.addEventListener('input', () => {
       if (input.value === '') {
         ecartEl.textContent = '';
         ecartEl.className = 'inv-ecart';
+        comment.hidden = true;
       } else {
         const ecart = Number(input.value) - theo;
         ecartEl.textContent = (ecart > 0 ? '+' : '') + fmtQty(ecart);
         ecartEl.className = 'inv-ecart' + (ecart < 0 ? ' ecart-neg' : ecart > 0 ? ' ecart-pos' : '');
+        comment.hidden = ecart === 0;
       }
       updateValidateBtn();
     });
@@ -414,7 +424,9 @@ $('btnValidateInv').addEventListener('click', () => {
     const theo = stockOf(pid);
     const reel = Number(input.value);
     const ecart = reel - theo;
-    lignes.push({ produitId: pid, theo, reel, ecart });
+    const commentField = row.querySelector('[data-comment]');
+    const comment = commentField ? commentField.value.trim() : '';
+    lignes.push({ produitId: pid, theo, reel, ecart, comment });
     if (ecart !== 0) {
       mouvements.push({
         id: uid(),
@@ -424,7 +436,8 @@ $('btnValidateInv').addEventListener('click', () => {
         bordereau: '',
         dateLivraison: '',
         date: invDate,
-        motif: `Ajustement inventaire du ${fmtDate(invDate)}`
+        motif: `Ajustement inventaire du ${fmtDate(invDate)}`,
+        comment
       });
     }
   }
@@ -718,13 +731,13 @@ function buildWorkbookBytes() {
     ]);
   }
 
-  const invRows = [['Date inventaire', 'Produit', 'Type produit', 'Stock théorique', 'Stock réel', 'Écart', 'Unité']];
+  const invRows = [['Date inventaire', 'Produit', 'Type produit', 'Stock théorique', 'Stock réel', 'Écart', 'Commentaire', 'Unité']];
   const invs = inventaires.slice().sort((a, b) => b.date.localeCompare(a.date));
   for (const inv of invs) {
     for (const l of inv.lignes) {
       const p = pMap.get(l.produitId);
       if (!p) continue;
-      invRows.push([fmtDate(inv.date), p.nom, p.type, l.theo, l.reel, l.ecart, p.unite]);
+      invRows.push([fmtDate(inv.date), p.nom, p.type, l.theo, l.reel, l.ecart, l.comment || '', p.unite]);
     }
   }
 

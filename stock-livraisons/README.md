@@ -11,8 +11,8 @@ Gestion du stock des produits livrés — application web (PWA) jumelle de « Mo
 - **Entrées de livraison** : quantité + **numéro de bordereau** + **date de livraison** + **numéro de lot** + **date limite de consommation (DLC)** — champs obligatoires, conservés dans l'historique
 - **Fiche produit** : dernière livraison (bordereau, lot, date) et **DLC la plus proche** à venir
 - **Sorties de stock** : quantité + **date de la sortie** + motif (consommation, casse…), avec garde-fou si la quantité dépasse le stock
-- **Inventaire** : stock théorique vs stock réel saisi, **écarts calculés en direct** ; la validation enregistre automatiquement les ajustements comme mouvements
-- **Export Excel (.xlsx)** : 3 feuilles — *Stock actuel*, *Mouvements* (chaque entrée/sortie : date, bordereau, livraison, lot, DLC ou motif), *Inventaires* (théorique / réel / écart). Génération de fichier Open XML native, sans dépendance
+- **Inventaire** : stock théorique vs stock réel saisi, **écarts calculés en direct** ; **commentaire possible sur chaque écart** (casse, perte, erreur…) ; la validation enregistre automatiquement les ajustements comme mouvements (le commentaire apparaît dans le mouvement)
+- **Export Excel (.xlsx)** : 3 feuilles — *Stock actuel*, *Mouvements* (chaque entrée/sortie : date, bordereau, livraison, lot, DLC ou motif), *Inventaires* (théorique / réel / écart / commentaire). Génération de fichier Open XML native, sans dépendance
 - **Hors ligne**, données stockées sur l'appareil (localStorage), mode sombre automatique
 
 ## Installation sur iPhone
@@ -36,7 +36,7 @@ URL : `https://68js45696r-source.github.io/Mon-frigo/stock-livraisons/`
 
 - **Produits** : nom, type, unité, seuil d'alerte
 - **Mouvements** : date, sens (Entrée / Sortie / Inventaire), quantité, bordereau + date de livraison + lot + DLC (pour les entrées), date + motif (pour les sorties)
-- **Inventaires** : date + pour chaque produit compté : stock théorique, stock réel, écart
+- **Inventaires** : date + pour chaque produit compté : stock théorique, stock réel, écart, commentaire (si écart commenté)
 
 ## Test de l'export
 
